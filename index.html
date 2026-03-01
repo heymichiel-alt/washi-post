@@ -1,125 +1,238 @@
-<script>
-  const params = new URLSearchParams(location.search);
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=1080, initial-scale=1" />
+  <title>DeskNeko Quote Card 4x5</title>
 
-  const BASE = "https://heymichiel-alt.github.io/static-assets/";
-  const IMAGES = [
-    "bamboo.jpg",
-    "cherry-blossom.jpg",
-    "ginger-cat-2.jpg",
-    "ginger-cat.jpg",
-    "Group 1.jpg",
-    "Group 2.jpg",
-    "koi-fish.jpg",
-    "washi-paper-2.jpg",
-    "mini-lotus.jpg"
-  ];
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=IM+Fell+English:ital@0;1&family=Yuji+Syuku&family=Shippori+Mincho:wght@400;600&display=swap" rel="stylesheet">
 
-  const FONTS = ["fell", "yuji", "shippori", "sawarabi"];
+  <style>
+    :root{
+      --w:1080px;
+      --h:1350px;
 
-  const quoteEl = document.getElementById("quote");
-  const subEl = document.getElementById("sub");
+      --ink: rgba(74,56,40,.62);
+      --muted: rgba(74,56,40,.32);
 
-  function rand(arr){ return arr[Math.floor(Math.random() * arr.length)]; }
+      --pad:96px;
+      --maxTextWidth: 900px;
 
-  function normalizeText(t){
-    t = (t || "").trim().replace(/[ \t]+\n/g, "\n").replace(/\n{3,}/g, "\n\n");
+      --bgUrl: url("https://heymichiel-alt.github.io/static-assets/washi-paper-2.jpg");
 
-    // If no newlines and long text, insert a break near the middle
-    if (!t.includes("\n") && t.length > 70) {
-      const target = Math.floor(t.length * 0.52);
-      let left = target, right = target;
-      while (left > 20 || right < t.length - 20) {
-        if (left > 20 && t[left] === " ") { t = t.slice(0, left) + "\n" + t.slice(left + 1); break; }
-        if (right < t.length - 20 && t[right] === " ") { t = t.slice(0, right) + "\n" + t.slice(right + 1); break; }
-        left--; right++;
-      }
+      --font-fell: "IM Fell English", serif;
+      --font-yuji: "Yuji Syuku", cursive;
+      --font-shippori: "Shippori Mincho", serif;
+      --fontCurrent: var(--font-shippori);
+
+      --titleSize: 66px;
+      --titleLineHeight: 1.18;
     }
 
-    // Basic orphan control: avoid 1-word last line
-    const lines = t.split("\n");
-    if (lines.length >= 2) {
-      const lastWords = lines.at(-1).trim().split(/\s+/);
-      if (lastWords.length === 1) {
-        const prevWords = lines.at(-2).trim().split(/\s+/);
-        if (prevWords.length >= 2) {
-          const moved = prevWords.pop();
-          lines[lines.length - 2] = prevWords.join(" ");
-          lines[lines.length - 1] = moved + " " + lines[lines.length - 1].trim();
-          t = lines.join("\n");
+    html, body {
+      margin:0;
+      padding:0;
+      width:var(--w);
+      height:var(--h);
+      background:transparent;
+    }
+
+    .card{
+      position:relative;
+      width:var(--w);
+      height:var(--h);
+      overflow:hidden;
+      background:#fff;
+      -webkit-font-smoothing:antialiased;
+      text-rendering:geometricPrecision;
+    }
+
+    .bg{
+      position:absolute;
+      inset:0;
+      background-image: var(--bgUrl);
+      background-size: cover;
+      background-position: center;
+      background-repeat: no-repeat;
+    }
+
+    .shade{
+      position:absolute;
+      inset:0;
+      background: radial-gradient(ellipse at center, rgba(255,255,255,0) 45%, rgba(255,255,255,.14) 100%);
+      pointer-events:none;
+    }
+
+    .content{
+      position:absolute;
+      inset:0;
+      padding:var(--pad);
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      text-align:center;
+    }
+
+    .stack{
+      width:min(var(--maxTextWidth), calc(var(--w) - (var(--pad) * 2)));
+      display:flex;
+      flex-direction:column;
+      gap:14px;
+      align-items:center;
+    }
+
+    .quote{
+      font-family:var(--fontCurrent);
+      font-size:var(--titleSize);
+      line-height:var(--titleLineHeight);
+      letter-spacing:-0.01em;
+      white-space:pre-wrap;
+      overflow-wrap:anywhere;
+
+      color: var(--ink);
+      text-shadow: 0 1px 0 rgba(255,255,255,.25);
+    }
+
+    .copyright{
+      font-family:var(--fontCurrent);
+      font-size: 20px;
+      color: rgba(74,56,40,.22);
+      letter-spacing:.02em;
+    }
+  </style>
+</head>
+
+<body>
+  <div class="card" id="card">
+    <div class="bg"></div>
+    <div class="shade"></div>
+
+    <div class="content">
+      <div class="stack" id="stack">
+        <div class="quote" id="quote"></div>
+        <div class="copyright">©DeskNeko</div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const params = new URLSearchParams(location.search);
+
+    const quoteEl = document.getElementById("quote");
+    const stackEl = document.getElementById("stack");
+
+    const BASE = "https://heymichiel-alt.github.io/static-assets/";
+    const IMAGES = [
+      "bamboo.jpg",
+      "cherry-blossom.jpg",
+      "ginger-cat-2.jpg",
+      "ginger-cat.jpg",
+      "Group 1.jpg",
+      "Group 2.jpg",
+      "koi-fish.jpg",
+      "washi-paper-2.jpg",
+      "mini-lotus.jpg"
+    ];
+
+    const FONTS = ["fell", "yuji", "shippori"];
+    const rand = (arr) => arr[Math.floor(Math.random() * arr.length)];
+
+    function normalizeText(t){
+      t = (t || "").trim().replace(/[ \t]+\n/g, "\n").replace(/\n{3,}/g, "\n\n");
+
+      // If no explicit newlines and long, insert a break near the middle
+      if (!t.includes("\n") && t.length > 70) {
+        const target = Math.floor(t.length * 0.52);
+        let left = target, right = target;
+        while (left > 20 || right < t.length - 20) {
+          if (left > 20 && t[left] === " ") { t = t.slice(0, left) + "\n" + t.slice(left + 1); break; }
+          if (right < t.length - 20 && t[right] === " ") { t = t.slice(0, right) + "\n" + t.slice(right + 1); break; }
+          left--; right++;
         }
       }
+
+      // Basic orphan control
+      const lines = t.split("\n");
+      if (lines.length >= 2) {
+        const last = lines.at(-1).trim().split(/\s+/);
+        if (last.length === 1) {
+          const prev = lines.at(-2).trim().split(/\s+/);
+          if (prev.length >= 2) {
+            const moved = prev.pop();
+            lines[lines.length - 2] = prev.join(" ");
+            lines[lines.length - 1] = moved + " " + lines[lines.length - 1].trim();
+            t = lines.join("\n");
+          }
+        }
+      }
+      return t;
     }
 
-    return t;
-  }
+    function applyFont(mode){
+      if (mode === "fell") {
+        document.documentElement.style.setProperty("--fontCurrent", "var(--font-fell)");
+        document.documentElement.style.setProperty("--titleSize", "66px");
+      } else if (mode === "yuji") {
+        document.documentElement.style.setProperty("--fontCurrent", "var(--font-yuji)");
+        document.documentElement.style.setProperty("--titleSize", "62px");
+      } else {
+        document.documentElement.style.setProperty("--fontCurrent", "var(--font-shippori)");
+        document.documentElement.style.setProperty("--titleSize", "66px");
+      }
+    }
 
-  function applyFont(mode){
-    if (mode === "fell") {
-      document.documentElement.style.setProperty("--fontCurrent", "var(--font-fell)");
-      document.documentElement.style.setProperty("--titleSize", "66px");
-    } else if (mode === "yuji") {
-      document.documentElement.style.setProperty("--fontCurrent", "var(--font-yuji)");
-      document.documentElement.style.setProperty("--titleSize", "62px"); // Yuji reads larger
-    } else if (mode === "sawarabi") {
-      document.documentElement.style.setProperty("--fontCurrent", "var(--font-sawarabi)");
-      document.documentElement.style.setProperty("--titleSize", "66px");
+    function setBg(filename){
+      // Encode spaces safely (Group 1.jpg -> Group%201.jpg)
+      const url = BASE + encodeURIComponent(filename).replace(/%2F/g, "/");
+      document.documentElement.style.setProperty("--bgUrl", `url("${url}")`);
+    }
+
+    // Pull quote from Make: ?quote=...
+    const incoming = params.get("quote") || params.get("q") || "";
+    const q = normalizeText(incoming);
+
+    // If empty (e.g. testing without Make), show a placeholder
+    quoteEl.textContent = q || "Add ?quote=... to the URL to render a quote.";
+
+    // Random font unless forced (?font=fell|yuji|shippori)
+    const forcedFont = (params.get("font") || "").toLowerCase();
+    const fontMode = FONTS.includes(forcedFont) ? forcedFont : rand(FONTS);
+    applyFont(fontMode);
+
+    // Background selection
+    const lower = (q || "").toLowerCase();
+    const isCat = lower.includes("cat") || lower.includes("cats") || lower.includes("kitty") || lower.includes("kitten");
+    const catImgs = IMAGES.filter(n => n.toLowerCase().includes("cat"));
+    const nonCatImgs = IMAGES.filter(n => !n.toLowerCase().includes("cat"));
+
+    const chosen = isCat ? rand(catImgs) : rand(nonCatImgs);
+
+    // Optional overrides:
+    // ?bgName=ginger-cat.jpg  (filename from list)
+    // ?bg=https://...         (full URL)
+    if (params.get("bg")) {
+      document.documentElement.style.setProperty("--bgUrl", `url("${params.get("bg")}")`);
+    } else if (params.get("bgName")) {
+      setBg(params.get("bgName"));
     } else {
-      document.documentElement.style.setProperty("--fontCurrent", "var(--font-shippori)");
-      document.documentElement.style.setProperty("--titleSize", "66px");
+      setBg(chosen);
     }
-  }
 
-  function setBg(filename){
-    document.documentElement.style.setProperty("--bgUrl", `url("${BASE + filename}")`);
-  }
-
-  // IMPORTANT: accept Make param name "quote"
-  const incomingQuote = params.get("quote") || params.get("q") || quoteEl.textContent;
-  const q = normalizeText(incomingQuote);
-  quoteEl.textContent = q;
-
-  if (params.get("sub")) subEl.textContent = params.get("sub");
-
-  // 1) Random font every render (unless forced via ?font=yuji etc.)
-  const forcedFont = (params.get("font") || "").toLowerCase();
-  const fontMode = FONTS.includes(forcedFont) ? forcedFont : rand(FONTS);
-  applyFont(fontMode);
-
-  // 2) Background selection
-  const lower = q.toLowerCase();
-  const isCat = lower.includes("cat") || lower.includes("cats") || lower.includes("kitty") || lower.includes("kitten");
-
-  const catImgs = IMAGES.filter(n => n.toLowerCase().includes("cat"));
-  const nonCatImgs = IMAGES.filter(n => !n.toLowerCase().includes("cat"));
-
-  const chosen = isCat ? rand(catImgs) : rand(nonCatImgs);
-
-  // Allow manual override if you ever want: ?bgName=ginger-cat.jpg
-  const bgName = params.get("bgName");
-  if (bgName) setBg(bgName);
-  else setBg(chosen);
-
-  // Optional: ink mode (kept from your code)
-  const inkMode = (params.get("ink") || "soft").toLowerCase();
-  if (inkMode === "readable") {
-    document.documentElement.style.setProperty("--ink1", "rgba(74,56,40,.22)");
-    document.documentElement.style.setProperty("--ink2", "rgba(74,56,40,.62)");
-    document.documentElement.style.setProperty("--muted", "rgba(74,56,40,.44)");
-  }
-
-  // Autofit (same idea as before)
-  function fitText(){
-    const stack = document.getElementById("stack");
-    let size = parseInt(getComputedStyle(document.documentElement).getPropertyValue("--titleSize"), 10);
-    const min = 44;
-    const maxHeight = 860;
-
-    let tries = 0;
-    while (stack.scrollHeight > maxHeight && size > min && tries < 60) {
-      size -= 2;
-      document.documentElement.style.setProperty("--titleSize", size + "px");
-      tries++;
+    // Autofit
+    function fitText(){
+      let size = parseInt(getComputedStyle(document.documentElement).getPropertyValue("--titleSize"), 10);
+      const min = 44;
+      const maxHeight = 860;
+      let tries = 0;
+      while (stackEl.scrollHeight > maxHeight && size > min && tries < 60) {
+        size -= 2;
+        document.documentElement.style.setProperty("--titleSize", size + "px");
+        tries++;
+      }
     }
-  }
-  setTimeout(fitText, 110);
-</script>
+    setTimeout(fitText, 120);
+  </script>
+</body>
+</html>
