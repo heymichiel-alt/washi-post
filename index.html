@@ -1,0 +1,125 @@
+<script>
+  const params = new URLSearchParams(location.search);
+
+  const BASE = "https://heymichiel-alt.github.io/static-assets/";
+  const IMAGES = [
+    "bamboo.jpg",
+    "cherry-blossom.jpg",
+    "ginger-cat-2.jpg",
+    "ginger-cat.jpg",
+    "Group 1.jpg",
+    "Group 2.jpg",
+    "koi-fish.jpg",
+    "washi-paper-2.jpg",
+    "mini-lotus.jpg"
+  ];
+
+  const FONTS = ["fell", "yuji", "shippori", "sawarabi"];
+
+  const quoteEl = document.getElementById("quote");
+  const subEl = document.getElementById("sub");
+
+  function rand(arr){ return arr[Math.floor(Math.random() * arr.length)]; }
+
+  function normalizeText(t){
+    t = (t || "").trim().replace(/[ \t]+\n/g, "\n").replace(/\n{3,}/g, "\n\n");
+
+    // If no newlines and long text, insert a break near the middle
+    if (!t.includes("\n") && t.length > 70) {
+      const target = Math.floor(t.length * 0.52);
+      let left = target, right = target;
+      while (left > 20 || right < t.length - 20) {
+        if (left > 20 && t[left] === " ") { t = t.slice(0, left) + "\n" + t.slice(left + 1); break; }
+        if (right < t.length - 20 && t[right] === " ") { t = t.slice(0, right) + "\n" + t.slice(right + 1); break; }
+        left--; right++;
+      }
+    }
+
+    // Basic orphan control: avoid 1-word last line
+    const lines = t.split("\n");
+    if (lines.length >= 2) {
+      const lastWords = lines.at(-1).trim().split(/\s+/);
+      if (lastWords.length === 1) {
+        const prevWords = lines.at(-2).trim().split(/\s+/);
+        if (prevWords.length >= 2) {
+          const moved = prevWords.pop();
+          lines[lines.length - 2] = prevWords.join(" ");
+          lines[lines.length - 1] = moved + " " + lines[lines.length - 1].trim();
+          t = lines.join("\n");
+        }
+      }
+    }
+
+    return t;
+  }
+
+  function applyFont(mode){
+    if (mode === "fell") {
+      document.documentElement.style.setProperty("--fontCurrent", "var(--font-fell)");
+      document.documentElement.style.setProperty("--titleSize", "66px");
+    } else if (mode === "yuji") {
+      document.documentElement.style.setProperty("--fontCurrent", "var(--font-yuji)");
+      document.documentElement.style.setProperty("--titleSize", "62px"); // Yuji reads larger
+    } else if (mode === "sawarabi") {
+      document.documentElement.style.setProperty("--fontCurrent", "var(--font-sawarabi)");
+      document.documentElement.style.setProperty("--titleSize", "66px");
+    } else {
+      document.documentElement.style.setProperty("--fontCurrent", "var(--font-shippori)");
+      document.documentElement.style.setProperty("--titleSize", "66px");
+    }
+  }
+
+  function setBg(filename){
+    document.documentElement.style.setProperty("--bgUrl", `url("${BASE + filename}")`);
+  }
+
+  // IMPORTANT: accept Make param name "quote"
+  const incomingQuote = params.get("quote") || params.get("q") || quoteEl.textContent;
+  const q = normalizeText(incomingQuote);
+  quoteEl.textContent = q;
+
+  if (params.get("sub")) subEl.textContent = params.get("sub");
+
+  // 1) Random font every render (unless forced via ?font=yuji etc.)
+  const forcedFont = (params.get("font") || "").toLowerCase();
+  const fontMode = FONTS.includes(forcedFont) ? forcedFont : rand(FONTS);
+  applyFont(fontMode);
+
+  // 2) Background selection
+  const lower = q.toLowerCase();
+  const isCat = lower.includes("cat") || lower.includes("cats") || lower.includes("kitty") || lower.includes("kitten");
+
+  const catImgs = IMAGES.filter(n => n.toLowerCase().includes("cat"));
+  const nonCatImgs = IMAGES.filter(n => !n.toLowerCase().includes("cat"));
+
+  const chosen = isCat ? rand(catImgs) : rand(nonCatImgs);
+
+  // Allow manual override if you ever want: ?bgName=ginger-cat.jpg
+  const bgName = params.get("bgName");
+  if (bgName) setBg(bgName);
+  else setBg(chosen);
+
+  // Optional: ink mode (kept from your code)
+  const inkMode = (params.get("ink") || "soft").toLowerCase();
+  if (inkMode === "readable") {
+    document.documentElement.style.setProperty("--ink1", "rgba(74,56,40,.22)");
+    document.documentElement.style.setProperty("--ink2", "rgba(74,56,40,.62)");
+    document.documentElement.style.setProperty("--muted", "rgba(74,56,40,.44)");
+  }
+
+  // Autofit (same idea as before)
+  function fitText(){
+    const stack = document.getElementById("stack");
+    let size = parseInt(getComputedStyle(document.documentElement).getPropertyValue("--titleSize"), 10);
+    const min = 44;
+    const maxHeight = 860;
+
+    let tries = 0;
+    while (stack.scrollHeight > maxHeight && size > min && tries < 60) {
+      size -= 2;
+      document.documentElement.style.setProperty("--titleSize", size + "px");
+      tries++;
+    }
+  }
+  setTimeout(fitText, 110);
+</script>
